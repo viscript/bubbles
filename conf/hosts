@@ -1,0 +1,6 @@
+[springboard]
+l-tools1.sre.bj1.limei.com:22
+[nginx-adnetwork]
+l-ng[1:6].sre.bj1.limei.com:22
+[nginx-background]
+l-ng7.sre.bj1.limei.com:22
