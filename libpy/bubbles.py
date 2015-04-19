@@ -26,7 +26,7 @@ if __name__ == '__main__':
     #new queue
     queue = Queue.Queue(0)
     #设置线程池
-    td = TaskDistribute(Loger=Log, Thread_cores=5, newQueue=queue)
+    td = TaskDistribute(Loger=Log, Thread_cores=3, newQueue=queue)
     #添加测试生产者
     tp = tryProducer(Loger=Log, newQueue=queue, maxId=20)
     #监控信号
@@ -36,5 +36,7 @@ if __name__ == '__main__':
     tp.start()
     Log.D("主函数生产者灌入等待2S")
     time.sleep(1)
+    #while not queue.empty():  #队列不为空就开始循环
+    #    print queue.get(),  
     #开始进行程序
     reData = td.run()
