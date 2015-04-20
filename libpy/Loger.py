@@ -20,8 +20,8 @@ class Loger:
                        LOG_LOWEST_RANK = logging.DEBUG,
                        LOG_PATH = "log",
                        LOG_FILE_NAME = "bubbles.log",
-                       CONSOLE_RANK = logging.CRITICAL,
-                       LOG_FILE_RANK = logging.CRITICAL
+                       CONSOLE_RANK = logging.DEBUG,
+                       LOG_FILE_RANK = logging.DEBUG
                        ):
         # private args
         self.FILE_PATH = FILE_PATH

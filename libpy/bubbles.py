@@ -26,9 +26,9 @@ if __name__ == '__main__':
     #new queue
     queue = Queue.Queue(0)
     #设置线程池
-    td = TaskDistribute(Loger=Log, Thread_cores=3, newQueue=queue)
+    td = TaskDistribute(Loger=Log, Thread_cores=200, newQueue=queue)
     #添加测试生产者
-    tp = tryProducer(Loger=Log, newQueue=queue, maxId=20)
+    tp = tryProducer(Loger=Log, newQueue=queue, maxId=10000)
     #监控信号
     signal.signal(signal.SIGINT, td.stop)
     signal.signal(signal.SIGTERM, td.stop)

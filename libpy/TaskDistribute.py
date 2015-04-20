@@ -9,7 +9,7 @@ Bubbles 多线程处理
 import Queue, threading, time, random
 
 def doJob(strr, id=0):
-    time.sleep(random.uniform(4, 5))
+    #time.sleep(random.uniform(0, 1))
     print "     ** " + strr + " Task ID: " + str(id) + "完成**"
 
 #生产者测试使用
@@ -34,12 +34,29 @@ class tryProducer(threading.Thread):
             indexx=indexx+1
         self.L.D("生产者队列长度暂时为: " + str(self.queue.qsize()))
        
-class MonitorThread(threading.Thread):
-    def __init__(self, tread_Max_time): 
-        self.tread_Max_time = tread_Max_time
-        self.task_Tread_monitor = []
-        self.diequeue = queue 
-        
+class monitorT(threading.Thread):
+    def __init__(self, thread_Max_time, Loger): 
+        threading.Thread.__init__(self)
+        self.thread_Max_time = thread_Max_time
+        self.L = Loger
+
+    def run(self):
+        global monitor
+        while True:
+            time.sleep(0.5)
+            for th in monitor:
+                try:
+                    sub_time = int(time.time() - monitor[th]['start'])
+                    self.L.D("线程: " + th + " 正在运行时间: " + str(sub_time) )
+                    if int(sub_time) > self.thread_Max_time:
+                        self.L.D("线程: " + th + " 超时")
+                        monitor[th]["status"] = "timeout"
+                    pass
+                except NameError:
+                    pass
+       
+
+ 
 class MyThread(threading.Thread):
     def __init__(self, queue, reQueue, thread_number, thread_cores, task_count, Loger):
         threading.Thread.__init__(self)
@@ -63,9 +80,11 @@ class MyThread(threading.Thread):
             if self.do_that == True and self.queue.qsize() > 0 :
                 try:
                     count = monitor[self.getName()]['count']
-                    monitor[self.getName()]={'start':time.time(),'count':count+1, 'thread': self}
+                    monitor[self.getName()]={'start':time.time(),'count':count+1, 'thread': self, "status":"active"}
+                    self.L.D(monitor[self.getName()])
                 except KeyError:
-                    monitor[self.getName()]={'start':time.time(),'count':0, 'thread':self}
+                    monitor[self.getName()]={'start':time.time(),'count':0, 'thread':self, "status":"active"}
+                    self.L.D(monitor[self.getName()])
                 function, args = self.queue.get()
                 self.L.I("函数: " + function.__name__ + " 参数: " + args.__str__() + ", 现在任务处理线程ID: " + str(self.thread_number))
 
@@ -76,21 +95,22 @@ class MyThread(threading.Thread):
             #    function, args = self.queue.get()
             #    #pass
             else:
+                time.sleep(1)
                 try:
                     count = monitor[self.getName()]['count']
-                    monitor[self.getName()]={'start':time.time(),'count':count, 'thread':False}
+                    monitor[self.getName()]={'start':time.time(), 'count':count, 'thread':False, "status":"idle"}
+                    self.L.D(monitor[self.getName()])
                 except KeyError:
-                    monitor[self.getName()]={'start':time.time(),'count':0, 'thread':False}
+                    monitor[self.getName()]={'start':time.time(), 'count':0, 'thread':False, "status":"idle"}
+                    self.L.D(monitor[self.getName()])
 
 class TaskDistribute():
     def __init__(self, Loger, 
                        Thread_cores=4,
-                       newQueue=Queue.Queue(0),
-                       dieQueue=Queue.Queue(0)):
+                       newQueue=Queue.Queue(0)):
         self.L = Loger
         self.queue = newQueue
         self.reQueue = Queue.Queue(0)
-        #self.dieQueue = dieQueue
         self.threads_list = []
         self.Thread_cores = Thread_cores
         self.Id_counter = 0
@@ -108,27 +128,19 @@ class TaskDistribute():
     def run(self):
         self.L.I("任务数量: " + str(self.queue.qsize()))
         global monitor
+        #monitor 线程状态
+        #{"thread-2":{"start":3.21212121, "count": 3, "thread":function, "status":"active/timeout/idle"}}
         monitor = {}
-        ######
+        mt = monitorT(thread_Max_time=3, Loger=self.L)
+        mt.start()
         while True:
-            for th in monitor:
-                try:
-                    sub_time = int(time.time() - monitor[th]['start'])
-                    self.L.C("线程: " + th + " 正在运行时间: " + str(sub_time) )
-                    if int(sub_time) > 3:
-                        self.L.C("线程: " + th + " 超时")
-                        try:
-                            monitor[th]['thread'].stop()
-                            self.L.C("stop进程: " + th + " 成功")
-                        except AttributeError:
-                            self.L.C("stop进程: " + th + " 失败")
-                    pass
-                except NameError:
-                    pass
-            print "-----------"
             #time.sleep(0.01)
+            timeout_num = 0
             if self.do_that == True:
-                if  self.queue.qsize() > 0 and  (threading.activeCount() - 1) < self.Thread_cores:
+                for th in monitor:
+                    if "timeout" in monitor[th]['status']:
+                        timeout_num+=1
+                if  self.queue.qsize() > 0 and  (threading.activeCount() - 1) < self.Thread_cores + timeout_num:
                     thread = MyThread(queue = self.queue, 
                                       reQueue = self.reQueue,
                                       thread_number = self.Id_counter, 
